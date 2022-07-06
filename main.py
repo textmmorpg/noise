@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image
 import pickle
 import time
+from tqdm import tqdm
 
 def create_noise(size: int, depth: int, max_box: int, box_increment: int, filename: str):
     startTime = time.time()
@@ -41,19 +42,13 @@ def create_noise(size: int, depth: int, max_box: int, box_increment: int, filena
     # smooth
     def blur(box):
         box_half = int(box/2)
-        for cur_x in range(box_half, size - box_half):
-            for cur_y in range(box_half, size - box_half):
-                for cur_z in range(box_half, size - box_half):
-                    vals = []
-                    for x in range(-box_half, box_half):
-                        for y in range(-box_half, box_half):
-                            for z in range(-box_half, box_half):
-                                box_x = cur_x + x
-                                box_y = cur_y + y
-                                box_z = cur_z + z
-                                vals.append(image[box_x][box_y][box_z])
-                    
-                    image[cur_x][cur_y][cur_z] = np.mean(vals)
+        for z in tqdm(range(size)):
+            for x in range(size):
+                for y in range(size):
+                    box_x = [image[box_i + x][y][z] for box_i in range(-box_half, box_half)]
+                    box_y = [image[x][box_i + y][z] for box_i in range(-box_half, box_half)]
+                    box_z = [image[x][y][box_i + z] for box_i in range(-box_half, box_half)]
+                    image[x][y][z] = np.mean(box_x + box_y + box_z)
 
     print('blurring')
     blur(3)
