@@ -59,9 +59,6 @@ def create_noise(size: int, depth: int, max_box: int, box_increment: int, filena
 
     blur(box_increment)
     blur(box_increment)
-    blur(box_increment)
-    blur(box_increment)
-    blur(box_increment)
     executionTime = (time.time() - startTime)
     print('Execution time in seconds: ' + str(executionTime))
 
