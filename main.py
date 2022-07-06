@@ -5,10 +5,10 @@ import numpy as np
 from PIL import Image
 import pickle
 
-size = 500
-depth = 500
-max_box = 60
-box_increment = 15
+size = 100
+depth = 3000
+max_box = 13
+box_increment = 3
 
 # initialize with random values
 image = [[[[0, 0, 0] for i in range(size)] for y in range(size)] for r in range(size)]
@@ -36,7 +36,7 @@ for box in range(box_increment, max_box, box_increment):
                         continue
 
                     cur_dist =  abs(dist([box_x, box_y, box_z], [cur_x, cur_y, cur_z])) / box/2
-                    image[box_x][box_y] = image[cur_x][cur_y][cur_z]*(1-cur_dist) + image[box_x][box_y][box_z]*cur_dist
+                    image[box_x][box_y][box_z] = image[cur_x][cur_y][cur_z]*(1-cur_dist) + image[box_x][box_y][box_z]*cur_dist
 
 # smooth
 def blur(box):
@@ -65,6 +65,7 @@ with open('data.pickle', 'wb') as handle:
     pickle.dump(image, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 for r in range(size):
+    image_data = [[[0, 0, 0] for i in range(size)] for y in range(size)]
     # prep for output
     for i in range(size):
         for y in range(size):
@@ -72,12 +73,12 @@ for r in range(size):
             if val > 256:
                 val = 256
             
-            image[i][y][r] = [
+            image_data[i][y] = [
                 int(val),
                 int(val),
                 int(val)
             ]
 
-    np_data = np.array(image)
+    np_data = np.array(image_data)
     im = Image.fromarray(np_data.astype(np.uint8))
-    im.save("images/result"+r+".jpg")
+    im.save("images/result" + str(r) + ".jpg")
