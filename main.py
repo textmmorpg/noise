@@ -9,7 +9,8 @@ import time
 def create_noise(size: int, depth: int, max_box: int, box_increment: int, filename: str):
     startTime = time.time()
     # initialize with random values
-    image = [[[[0, 0, 0] for i in range(size)] for y in range(size)] for r in range(size)]
+    print('initializing')
+    image = [[[[0] for i in range(size)] for y in range(size)] for r in range(size)]
     for i in range(size):
         for y in range(size):
             for r in range(size):
@@ -17,6 +18,7 @@ def create_noise(size: int, depth: int, max_box: int, box_increment: int, filena
                 image[i][y][r] = val
 
     # adjust values
+    print('running adjustment')
     for box in range(box_increment, max_box, box_increment):
         for i in range(depth):
             cur_x = int(random() * size)
@@ -33,32 +35,29 @@ def create_noise(size: int, depth: int, max_box: int, box_increment: int, filena
                         if box_x > size - 1 or box_y > size - 1 or box_z > size - 1 or box_x < 0 or box_y < 0 or box_z < 0:
                             continue
 
-                        cur_dist =  abs(dist([box_x, box_y, box_z], [cur_x, cur_y, cur_z])) / box/2
-                        image[box_x][box_y][box_z] = image[cur_x][cur_y][cur_z]*(1-cur_dist) + image[box_x][box_y][box_z]*cur_dist
+                        # cur_dist =  abs(dist([box_x, box_y, box_z], [cur_x, cur_y, cur_z])) / box/2
+                        image[box_x][box_y][box_z] = (image[cur_x][cur_y][cur_z] + image[box_x][box_y][box_z])/2
 
     # smooth
     def blur(box):
-        for cur_x in range(size):
-            for cur_y in range(size):
-                for cur_z in range(size):
+        box_half = int(box/2)
+        for cur_x in range(box_half, size - box_half):
+            for cur_y in range(box_half, size - box_half):
+                for cur_z in range(box_half, size - box_half):
                     vals = []
-                    for x in range(int(-box/2), int(box/2)):
-                        for y in range(int(-box/2), int(box/2)):
-                            for z in range(int(-box/2), int(box/2)):
-
+                    for x in range(-box_half, box_half):
+                        for y in range(-box_half, box_half):
+                            for z in range(-box_half, box_half):
                                 box_x = cur_x + x
                                 box_y = cur_y + y
                                 box_z = cur_z + z
-
-                                if box_x > size - 1 or box_y > size - 1 or box_z > size - 1 or box_x < 0 or box_y < 0 or box_z < 0:
-                                    continue
-
                                 vals.append(image[box_x][box_y][box_z])
                     
-                    image[cur_x][cur_y][cur_z] = sum(vals)/len(vals)
+                    image[cur_x][cur_y][cur_z] = np.mean(vals)
 
-    blur(box_increment)
-    blur(box_increment)
+    print('blurring')
+    blur(3)
+    # blur(box_increment)
     executionTime = (time.time() - startTime)
     print('Execution time in seconds: ' + str(executionTime))
 
@@ -88,11 +87,11 @@ def write_frames(image_data, size):
         im = Image.fromarray(np_data.astype(np.uint8))
         im.save("images/result" + str(r) + ".jpg")
 
-# small size
-size = 100
-depth = 3000
-max_box = 13
-box_increment = 3
+
+size = 300
+depth = 9000
+max_box = 30
+box_increment = 3*3
 
 image = create_noise(size, depth, max_box, box_increment, 'noise1.pickle')
 image = create_noise(size, depth, max_box, box_increment, 'noise2.pickle')
