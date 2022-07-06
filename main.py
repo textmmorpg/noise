@@ -58,6 +58,10 @@ def create_noise(size: int, depth: int, max_box: int, box_increment: int, filena
                     image[cur_x][cur_y][cur_z] = sum(vals)/len(vals)
 
     blur(box_increment)
+    blur(box_increment)
+    blur(box_increment)
+    blur(box_increment)
+    blur(box_increment)
     executionTime = (time.time() - startTime)
     print('Execution time in seconds: ' + str(executionTime))
 
@@ -93,13 +97,7 @@ depth = 3000
 max_box = 13
 box_increment = 3
 
-# medium size
-# size = 256
-# depth = 3000
-# max_box = 70
-# box_increment = 10
-
-image = create_noise(size, depth, max_box, box_increment, 'noise1.pickle')
+image = create_noise(size, depth, max_box, box_increment, 'none.pickle')
 image = create_noise(size, depth, max_box, box_increment, 'noise2.pickle')
 image = create_noise(size, depth, max_box, box_increment, 'noise3.pickle')
 
