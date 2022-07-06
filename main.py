@@ -4,6 +4,8 @@ from random import random
 import numpy as np
 from PIL import Image
 import pickle
+import time
+startTime = time.time()
 
 size = 100
 depth = 3000
@@ -60,6 +62,9 @@ def blur(box):
                 image[cur_x][cur_y][cur_z] = sum(vals)/len(vals)
 
 blur(box_increment)
+
+executionTime = (time.time() - startTime)
+print('Execution time in seconds: ' + str(executionTime))
 
 with open('data.pickle', 'wb') as handle:
     pickle.dump(image, handle, protocol=pickle.HIGHEST_PROTOCOL)
