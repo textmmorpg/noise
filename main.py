@@ -45,20 +45,21 @@ def create_noise(size: int, depth: int, max_box: int, box_increment: int, filena
         for z in tqdm(range(size)):
             for x in range(size):
                 for y in range(size):
-                    box_x = [image[box_i + x][y][z] for box_i in range(-box_half, box_half)]
-                    box_y = [image[x][box_i + y][z] for box_i in range(-box_half, box_half)]
-                    box_z = [image[x][y][box_i + z] for box_i in range(-box_half, box_half)]
+                    box_x = [image[box_i + x][y][z] for box_i in range(-box_half, box_half) if box_i + x > 0 and box_i + x < size]
+                    box_y = [image[x][box_i + y][z] for box_i in range(-box_half, box_half) if box_i + y > 0 and box_i + y < size]
+                    box_z = [image[x][y][box_i + z] for box_i in range(-box_half, box_half) if box_i + z > 0 and box_i + z < size]
                     image[x][y][z] = np.mean(box_x + box_y + box_z)
 
     print('blurring')
-    blur(3)
+    blur(5)
+    blur(5)
     # blur(box_increment)
     executionTime = (time.time() - startTime)
     print('Execution time in seconds: ' + str(executionTime))
 
-
-    with open(filename, 'wb') as handle:
-        pickle.dump(image, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    for i in range(size):
+        with open(filename + '/' + str(i) + '.pickle', 'wb') as handle:
+            pickle.dump(image[i], handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     return image
 
@@ -83,13 +84,13 @@ def write_frames(image_data, size):
         im.save("images/result" + str(r) + ".jpg")
 
 
-size = 300
-depth = 9000
-max_box = 30
-box_increment = 3*3
+size = 100
+depth = 3000
+max_box = 10
+box_increment = 2
 
-image = create_noise(size, depth, max_box, box_increment, 'noise1.pickle')
-image = create_noise(size, depth, max_box, box_increment, 'noise2.pickle')
-image = create_noise(size, depth, max_box, box_increment, 'noise3.pickle')
+image = create_noise(size, depth, max_box, box_increment, 'noise1')
+image = create_noise(size, depth, max_box, box_increment, 'noise2')
+image = create_noise(size, depth, max_box, box_increment, 'noise3')
 
 write_frames(image, size)
