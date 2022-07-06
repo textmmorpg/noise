@@ -94,7 +94,7 @@ depth = 3000
 max_box = 13
 box_increment = 3
 
-image = create_noise(size, depth, max_box, box_increment, 'none.pickle')
+image = create_noise(size, depth, max_box, box_increment, 'noise1.pickle')
 image = create_noise(size, depth, max_box, box_increment, 'noise2.pickle')
 image = create_noise(size, depth, max_box, box_increment, 'noise3.pickle')
 
