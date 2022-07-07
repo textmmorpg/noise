@@ -83,8 +83,8 @@ def write_frames(image_data, size):
         im.save("images/result" + str(r) + ".jpg")
 
 
-size = 100
-depth = 3000
+size = 100*2
+depth = 3000*4
 max_box = 13
 box_increment = 3
 
