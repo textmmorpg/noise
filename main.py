@@ -20,7 +20,7 @@ def create_noise(size: int, depth: int, max_box: int, box_increment: int, filena
 
     # adjust values
     print('running adjustment')
-    for box in range(box_increment, max_box, box_increment):
+    for box in range(max_box, box_increment, -box_increment):
         for i in range(depth):
             cur_x = int(random() * size)
             cur_y = int(random() * size)
@@ -48,12 +48,11 @@ def create_noise(size: int, depth: int, max_box: int, box_increment: int, filena
                     box_x = [image[box_i + x][y][z] for box_i in range(-box_half, box_half) if box_i + x > 0 and box_i + x < size]
                     box_y = [image[x][box_i + y][z] for box_i in range(-box_half, box_half) if box_i + y > 0 and box_i + y < size]
                     box_z = [image[x][y][box_i + z] for box_i in range(-box_half, box_half) if box_i + z > 0 and box_i + z < size]
-                    image[x][y][z] = np.mean(box_x + box_y + box_z)
+                    vals = box_x + box_y + box_z
+                    image[x][y][z] = np.mean(vals) if vals else image[x][y][z]
 
     print('blurring')
-    blur(5)
-    blur(5)
-    # blur(box_increment)
+    blur(box_increment)
     executionTime = (time.time() - startTime)
     print('Execution time in seconds: ' + str(executionTime))
 
@@ -86,8 +85,8 @@ def write_frames(image_data, size):
 
 size = 100
 depth = 3000
-max_box = 10
-box_increment = 2
+max_box = 13
+box_increment = 3
 
 image = create_noise(size, depth, max_box, box_increment, 'noise1')
 image = create_noise(size, depth, max_box, box_increment, 'noise2')
