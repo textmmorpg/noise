@@ -40,7 +40,6 @@ def create_noise(size: int, depth: int, max_box: int, box_increment: int, filena
                         # cur_dist =  abs(dist([box_x, box_y, box_z], [cur_x, cur_y, cur_z])) / box/2
                         image[box_x][box_y][box_z] = (image[cur_x][cur_y][cur_z] + image[box_x][box_y][box_z])/2
 
-    # smooth
     def blur(box):
         box_half = int(box/2)
         for z in range(size):
@@ -93,40 +92,71 @@ def create_chunks(chunk_grid_size, size, i):
 
                 create_noise(size, depth, max_box, box_increment, f'noise{i+1}', chunk_x, chunk_y, chunk_z)
 
-def blur_chunks(chunk1, chunk2, xyz, side, chunk_size):
-    pass
+
+def blur_chunk_side(box, xyz, side, chunk1, chunk2, chunk_size):
+    box_half = int(box/2)
+    for z in range(size):
+        for x in range(size):
+            for y in range(size):
+                box_x = [chunk1[box_i + x][y][z] for box_i in range(-box_half, box_half) if box_i + x > 0 and box_i + x < size]
+                box_y = [chunk1[x][box_i + y][z] for box_i in range(-box_half, box_half) if box_i + y > 0 and box_i + y < size]
+                box_z = [chunk1[x][y][box_i + z] for box_i in range(-box_half, box_half) if box_i + z > 0 and box_i + z < size]
+                vals = box_x + box_y + box_z
+                chunk1[x][y][z] = np.mean(vals) if vals else chunk1[x][y][z]
+    
+    return chunk1
+                
+def blur_chunks(chunk1, chunk2, filename1, filename2, xyz, side):
+    chunk1 = blur_chunk_side(13, xyz, side, chunk1, chunk2)
+    chunk1 = blur_chunk_side(5, xyz, side, chunk1, chunk2)
+    chunk2 = blur_chunk_side(13, xyz, side, chunk2, chunk1)
+    chunk2 = blur_chunk_side(5, xyz, side, chunk2, chunk1)
+
+    with open(filename1, 'wb') as handle:
+        pickle.dump(chunk1, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    with open(filename2, 'wb') as handle:
+        pickle.dump(chunk2, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
 
 def blur_chunks_together(i, chunk_grid_size, chunk_size):
     for chunk_x in tqdm(range(chunk_grid_size)):
         for chunk_y in range(chunk_grid_size):
             for chunk_z in range(chunk_grid_size):
 
-                with open(f'noise{i+1}/{chunk_x-1}_{chunk_y}_{chunk_z}.pickle', 'rb') as f:
+                cur_filename = f'noise{i+1}/{chunk_x}_{chunk_y}_{chunk_z}.pickle'
+                with open(cur_filename, 'rb') as f:
                     cur_chunk = pickle.load(f)
 
                 if chunk_x != 0:
-                    with open(f'noise{i+1}/{chunk_x-1}_{chunk_y}_{chunk_z}.pickle', 'rb') as f:
-                        blur_chunks(cur_chunk, pickle.load(f), 'x', -1, chunk_size)
+                    chunk_filename = f'noise{i+1}/{chunk_x-1}_{chunk_y}_{chunk_z}.pickle'
+                    with open(chunk_filename, 'rb') as f:
+                        blur_chunks(cur_chunk, pickle.load(f), cur_filename, chunk_filename, 'x', -1)
 
                 if chunk_x != chunk_grid_size-1:
-                    with open(f'noise{i+1}/{chunk_x+1}_{chunk_y}_{chunk_z}.pickle', 'rb') as f:
-                        blur_chunks(cur_chunk, pickle.load(f), 'x', 1, chunk_size)
+                    chunk_filename = f'noise{i+1}/{chunk_x+1}_{chunk_y}_{chunk_z}.pickle'
+                    with open(chunk_filename, 'rb') as f:
+                        blur_chunks(cur_chunk, pickle.load(f), cur_filename, chunk_filename, 'x', 1)
 
                 if chunk_y != 0:
-                    with open(f'noise{i+1}/{chunk_x}_{chunk_y-1}_{chunk_z}.pickle', 'rb') as f:
-                        blur_chunks(cur_chunk, pickle.load(f), 'y', -1, chunk_size)
+                    chunk_filename = f'noise{i+1}/{chunk_x}_{chunk_y-1}_{chunk_z}.pickle'
+                    with open(chunk_filename, 'rb') as f:
+                        blur_chunks(cur_chunk, pickle.load(f), cur_filename, chunk_filename, 'y', -1)
 
                 if chunk_y != chunk_grid_size-1:
-                    with open(f'noise{i+1}/{chunk_x}_{chunk_y+1}_{chunk_z}.pickle', 'rb') as f:
-                        blur_chunks(cur_chunk, pickle.load(f), 'y', 1, chunk_size)
+                    chunk_filename = f'noise{i+1}/{chunk_x}_{chunk_y+1}_{chunk_z}.pickle'
+                    with open(chunk_filename, 'rb') as f:
+                        blur_chunks(cur_chunk, pickle.load(f), cur_filename, chunk_filename, 'y', 1)
 
                 if chunk_z != 0:
-                    with open(f'noise{i+1}/{chunk_x}_{chunk_y}_{chunk_z-1}.pickle', 'rb') as f:
-                        blur_chunks(cur_chunk, pickle.load(f), 'z', -1, chunk_size)
+                    chunk_filename = f'noise{i+1}/{chunk_x}_{chunk_y}_{chunk_z-1}.pickle'
+                    with open(chunk_filename, 'rb') as f:
+                        blur_chunks(cur_chunk, pickle.load(f), cur_filename, chunk_filename, 'z', -1)
 
                 if chunk_z != chunk_grid_size-1:
-                    with open(f'noise{i+1}/{chunk_x}_{chunk_y}_{chunk_z+1}.pickle', 'rb') as f:
-                        blur_chunks(cur_chunk, pickle.load(f), 'z', 1, chunk_size)
+                    chunk_filename = f'noise{i+1}/{chunk_x}_{chunk_y}_{chunk_z+1}.pickle'
+                    with open(chunk_filename, 'rb') as f:
+                        blur_chunks(cur_chunk, pickle.load(f), cur_filename, chunk_filename, 'z', 1)
                 
 if __name__ == "__main__":
     size = 100
