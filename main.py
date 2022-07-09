@@ -82,8 +82,8 @@ def write_frames(image_data, size):
         im = Image.fromarray(np_data.astype(np.uint8))
         im.save("images/result" + str(r) + ".jpg")
 
-chunk_count = 100
-for chunk_i in range(chunk_count):
+chunk_count = 125
+for chunk_i in list(range(chunk_count))[99:]:
     print(f"chunk {chunk_i}/{chunk_count}")
 
     size = 100
