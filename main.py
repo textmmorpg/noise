@@ -1,4 +1,5 @@
 #!/usr/bin/env python3.9
+import chunk
 from math import dist
 from random import random
 import numpy as np
@@ -7,10 +8,10 @@ import pickle
 import time
 from tqdm import tqdm
 
-def create_noise(size: int, depth: int, max_box: int, box_increment: int, filename: str, chunk_i: int):
+def create_noise(size: int, depth: int, max_box: int, box_increment: int, filename: str, chunk_x: int, chunk_y: int, chunk_z: int):
     startTime = time.time()
     # initialize with random values
-    print('initializing')
+    # print('initializing')
     image = [[[[0] for i in range(size)] for y in range(size)] for r in range(size)]
     for i in range(size):
         for y in range(size):
@@ -19,7 +20,7 @@ def create_noise(size: int, depth: int, max_box: int, box_increment: int, filena
                 image[i][y][r] = val
 
     # adjust values
-    print('running adjustment')
+    # print('running adjustment')
     for box in range(max_box, box_increment, -box_increment):
         for i in range(depth):
             cur_x = int(random() * size)
@@ -42,7 +43,7 @@ def create_noise(size: int, depth: int, max_box: int, box_increment: int, filena
     # smooth
     def blur(box):
         box_half = int(box/2)
-        for z in tqdm(range(size)):
+        for z in range(size):
             for x in range(size):
                 for y in range(size):
                     box_x = [image[box_i + x][y][z] for box_i in range(-box_half, box_half) if box_i + x > 0 and box_i + x < size]
@@ -51,14 +52,13 @@ def create_noise(size: int, depth: int, max_box: int, box_increment: int, filena
                     vals = box_x + box_y + box_z
                     image[x][y][z] = np.mean(vals) if vals else image[x][y][z]
 
-    print('blurring')
+    # print('blurring')
     blur(box_increment)
-    executionTime = (time.time() - startTime)
-    print('Execution time in seconds: ' + str(executionTime))
+    # executionTime = (time.time() - startTime)
+    # print('Execution time in seconds: ' + str(executionTime))
 
-    for i in range(size):
-        with open(filename + '/' + str(i + chunk_i*size) + '.pickle', 'wb') as handle:
-            pickle.dump(image[i], handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(f'{filename}/{chunk_x}_{chunk_y}_{chunk_z}.pickle', 'wb') as handle:
+        pickle.dump(image, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     return image
 
@@ -82,17 +82,26 @@ def write_frames(image_data, size):
         im = Image.fromarray(np_data.astype(np.uint8))
         im.save("images/result" + str(r) + ".jpg")
 
-chunk_count = 125
-for chunk_i in list(range(chunk_count))[99:]:
-    print(f"chunk {chunk_i}/{chunk_count}")
+def create_chunks(chunk_grid_size, size, i):
+    for chunk_x in tqdm(range(chunk_grid_size)):
+        for chunk_y in range(chunk_grid_size):
+            for chunk_z in range(chunk_grid_size):
 
-    size = 100
-    depth = 3000
-    max_box = 13
-    box_increment = 3
+                depth = 3000
+                max_box = 13
+                box_increment = 3
 
-    image = create_noise(size, depth, max_box, box_increment, 'noise1', chunk_i)
-    image = create_noise(size, depth, max_box, box_increment, 'noise2', chunk_i)
-    image = create_noise(size, depth, max_box, box_increment, 'noise3', chunk_i)
+                create_noise(size, depth, max_box, box_increment, f'noise{i+1}', chunk_x, chunk_y, chunk_z)
 
-write_frames(image, size)
+def blur_chunks_together(i, chunk_grid_size, chunk_size):
+    for chunk_i in range(chunk_count):
+        print(f"chunk {chunk_i}/{chunk_count}")
+        with open(f'../noise/noise{i+1}/{chunk_i + z%chunk_size}.pickle', 'rb') as f:
+            noise_data = pickle.load(f)
+
+size = 100
+chunk_grid_size = 5
+# print("Blurring Chunks")
+for i in range(1,3):
+    # create_chunks(chunk_grid_size, size, i)
+    blur_chunks_together(i, chunk_grid_size, size)
