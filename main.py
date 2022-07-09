@@ -7,7 +7,7 @@ import pickle
 import time
 from tqdm import tqdm
 
-def create_noise(size: int, depth: int, max_box: int, box_increment: int, filename: str):
+def create_noise(size: int, depth: int, max_box: int, box_increment: int, filename: str, chunk_i: int):
     startTime = time.time()
     # initialize with random values
     print('initializing')
@@ -57,7 +57,7 @@ def create_noise(size: int, depth: int, max_box: int, box_increment: int, filena
     print('Execution time in seconds: ' + str(executionTime))
 
     for i in range(size):
-        with open(filename + '/' + str(i) + '.pickle', 'wb') as handle:
+        with open(filename + '/' + str(i + chunk_i*size) + '.pickle', 'wb') as handle:
             pickle.dump(image[i], handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     return image
@@ -82,14 +82,17 @@ def write_frames(image_data, size):
         im = Image.fromarray(np_data.astype(np.uint8))
         im.save("images/result" + str(r) + ".jpg")
 
+chunk_count = 100
+for chunk_i in range(chunk_count):
+    print(f"chunk {chunk_i}/{chunk_count}")
 
-size = int(100*2.5)
-depth = 3000*9
-max_box = 13
-box_increment = 3
+    size = 100
+    depth = 3000
+    max_box = 13
+    box_increment = 3
 
-image = create_noise(size, depth, max_box, box_increment, 'noise1')
-image = create_noise(size, depth, max_box, box_increment, 'noise2')
-image = create_noise(size, depth, max_box, box_increment, 'noise3')
+    image = create_noise(size, depth, max_box, box_increment, 'noise1', chunk_i)
+    image = create_noise(size, depth, max_box, box_increment, 'noise2', chunk_i)
+    image = create_noise(size, depth, max_box, box_increment, 'noise3', chunk_i)
 
 write_frames(image, size)
