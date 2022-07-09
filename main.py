@@ -93,15 +93,44 @@ def create_chunks(chunk_grid_size, size, i):
 
                 create_noise(size, depth, max_box, box_increment, f'noise{i+1}', chunk_x, chunk_y, chunk_z)
 
-def blur_chunks_together(i, chunk_grid_size, chunk_size):
-    for chunk_i in range(chunk_count):
-        print(f"chunk {chunk_i}/{chunk_count}")
-        with open(f'../noise/noise{i+1}/{chunk_i + z%chunk_size}.pickle', 'rb') as f:
-            noise_data = pickle.load(f)
+def blur_chunks(chunk1, chunk2, xyz, side, chunk_size):
+    pass
 
-size = 100
-chunk_grid_size = 5
-# print("Blurring Chunks")
-for i in range(1,3):
-    # create_chunks(chunk_grid_size, size, i)
-    blur_chunks_together(i, chunk_grid_size, size)
+def blur_chunks_together(i, chunk_grid_size, chunk_size):
+    for chunk_x in tqdm(range(chunk_grid_size)):
+        for chunk_y in range(chunk_grid_size):
+            for chunk_z in range(chunk_grid_size):
+
+                with open(f'noise{i+1}/{chunk_x-1}_{chunk_y}_{chunk_z}.pickle', 'rb') as f:
+                    cur_chunk = pickle.load(f)
+
+                if chunk_x != 0:
+                    with open(f'noise{i+1}/{chunk_x-1}_{chunk_y}_{chunk_z}.pickle', 'rb') as f:
+                        blur_chunks(cur_chunk, pickle.load(f), 'x', -1, chunk_size)
+
+                if chunk_x != chunk_grid_size-1:
+                    with open(f'noise{i+1}/{chunk_x+1}_{chunk_y}_{chunk_z}.pickle', 'rb') as f:
+                        blur_chunks(cur_chunk, pickle.load(f), 'x', 1, chunk_size)
+
+                if chunk_y != 0:
+                    with open(f'noise{i+1}/{chunk_x}_{chunk_y-1}_{chunk_z}.pickle', 'rb') as f:
+                        blur_chunks(cur_chunk, pickle.load(f), 'y', -1, chunk_size)
+
+                if chunk_y != chunk_grid_size-1:
+                    with open(f'noise{i+1}/{chunk_x}_{chunk_y+1}_{chunk_z}.pickle', 'rb') as f:
+                        blur_chunks(cur_chunk, pickle.load(f), 'y', 1, chunk_size)
+
+                if chunk_z != 0:
+                    with open(f'noise{i+1}/{chunk_x}_{chunk_y}_{chunk_z-1}.pickle', 'rb') as f:
+                        blur_chunks(cur_chunk, pickle.load(f), 'z', -1, chunk_size)
+
+                if chunk_z != chunk_grid_size-1:
+                    with open(f'noise{i+1}/{chunk_x}_{chunk_y}_{chunk_z+1}.pickle', 'rb') as f:
+                        blur_chunks(cur_chunk, pickle.load(f), 'z', 1, chunk_size)
+                
+if __name__ == "__main__":
+    size = 100
+    chunk_grid_size = 5
+    for i in range(1,3):
+        # create_chunks(chunk_grid_size, size, i)
+        blur_chunks_together(i, chunk_grid_size, size)
