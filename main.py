@@ -16,13 +16,22 @@ def create_noise(size: int, filename: str, chunk_x: int, chunk_y: int, chunk_z: 
                 val = random()
                 image[i][y][r] = val
 
-    for i in range(size):
-        with open(f'{filename}/{chunk_x}_{chunk_y}_{chunk_z}.pickle', 'wb') as handle:
-            pickle.dump(image[i], handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    return image
+    with open(f'{filename}/{chunk_x}_{chunk_y}_{chunk_z}.pickle', 'wb') as handle:
+        pickle.dump(image, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 def adjust_values(size_large: int, size_small: int, depth: int, max_box: int, box_increment: int, filename: str, chunk_x: int, chunk_y: int, chunk_z: int):
+
+    cur_image = pickle.load(open(f'{filename}/{chunk_x}_{chunk_y}_{chunk_z}.pickle', 'rb'))
+
+    images = {
+        f'{chunk_x}_{chunk_y}_{chunk_z}': cur_image,
+    }
+
+    for x in [-1, 0, 1]:
+        for y in [-1, 0, 1]:
+            for z in [-1, 0, 1]:
+                images[f'{chunk_x+x}_{chunk_y+y}_{chunk_z+z}'] = pickle.load(open(f'{filename}/{chunk_x}_{chunk_y}_{chunk_z}.pickle', 'rb'))
+
     # adjust values
     for box in range(max_box, box_increment, -box_increment):
         for i in range(depth):
@@ -37,50 +46,43 @@ def adjust_values(size_large: int, size_small: int, depth: int, max_box: int, bo
                         box_y = cur_y + y
                         box_z = cur_z + z
 
-                        if box_x > size - 1 or box_y > size - 1 or box_z > size - 1 or box_x < 0 or box_y < 0 or box_z < 0:
+                        real_x = box_x + size_small * chunk_x
+                        real_y = box_y + size_small * chunk_y
+                        real_z = box_z + size_small * chunk_z
+
+                        cur_chunk_x = int(real_x / size_small)
+                        cur_chunk_y = int(real_y / size_small)
+                        cur_chunk_z = int(real_z / size_small)
+
+                        # if box_x > size - 1 or box_y > size - 1 or box_z > size - 1 or box_x < 0 or box_y < 0 or box_z < 0:
+                        #     continue
+
+                        if real_x > size_large - 1 or real_y > size_large - 1 or real_z > size_large - 1 or real_x < 0 or real_y < 0 or real_z < 0:
                             continue
 
+                        box_image = images[f'{cur_chunk_x}_{cur_chunk_y}_{cur_chunk_z}']
+
                         # cur_dist =  abs(dist([box_x, box_y, box_z], [cur_x, cur_y, cur_z])) / box/2
-                        image[box_x][box_y][box_z] = (image[cur_x][cur_y][cur_z] + image[box_x][box_y][box_z])/2
+                        box_image[box_x % size_small][box_y % size_small][box_z % size_small] = (cur_image[cur_x][cur_y][cur_z] + box_image[box_x % size_small][box_y % size_small][box_z % size_small])/2
 
-    # smooth
-    def blur(box):
-        box_half = int(box/2)
-        for z in tqdm(range(size)):
-            for x in range(size):
-                for y in range(size):
-                    box_x = [image[box_i + x][y][z] for box_i in range(-box_half, box_half) if box_i + x > 0 and box_i + x < size]
-                    box_y = [image[x][box_i + y][z] for box_i in range(-box_half, box_half) if box_i + y > 0 and box_i + y < size]
-                    box_z = [image[x][y][box_i + z] for box_i in range(-box_half, box_half) if box_i + z > 0 and box_i + z < size]
-                    vals = box_x + box_y + box_z
-                    image[x][y][z] = np.mean(vals) if vals else image[x][y][z]
+    # # smooth
+    # def blur(box):
+    #     box_half = int(box/2)
+    #     for z in range(size):
+    #         for x in range(size):
+    #             for y in range(size):
+    #                 box_x = [image[box_i + x][y][z] for box_i in range(-box_half, box_half) if box_i + x > 0 and box_i + x < size]
+    #                 box_y = [image[x][box_i + y][z] for box_i in range(-box_half, box_half) if box_i + y > 0 and box_i + y < size]
+    #                 box_z = [image[x][y][box_i + z] for box_i in range(-box_half, box_half) if box_i + z > 0 and box_i + z < size]
+    #                 vals = box_x + box_y + box_z
+    #                 image[x][y][z] = np.mean(vals) if vals else image[x][y][z]
 
-    print('blurring')
-    blur(box_increment)
-    for i in range(size):
-        with open(filename + '/' + str(i + chunk_i*size) + '.pickle', 'wb') as handle:
-            pickle.dump(image[i], handle, protocol=pickle.HIGHEST_PROTOCOL)
+    # print('blurring')
+    # blur(box_increment)
 
-
-def write_frames(image_data, size):
-    for r in range(size):
-        image_data = [[[0, 0, 0] for i in range(size)] for y in range(size)]
-        # prep for output
-        for i in range(size):
-            for y in range(size):
-                val = image[i][y][r]*256
-                if val > 256:
-                    val = 256
-                
-                image_data[i][y] = [
-                    int(val),
-                    int(val),
-                    int(val)
-                ]
-
-        np_data = np.array(image_data)
-        im = Image.fromarray(np_data.astype(np.uint8))
-        im.save("images/result" + str(r) + ".jpg")
+    for image in images:
+        with open(f'{filename}/{image}.pickle', 'wb') as handle:
+            pickle.dump(images[image], handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 chunk_dim = 5
 chunk_count = int(chunk_dim*chunk_dim*chunk_dim)
@@ -88,13 +90,13 @@ size = 100
 depth = 1500
 max_box = 20
 box_increment = 5
-# print("initializing")
-# for chunk_x in tqdm(list(range(chunk_dim))):
-#     for chunk_y in list(range(chunk_dim)):
-#         for chunk_z in list(range(chunk_dim)):
-#             create_noise(size, 'random1', chunk_x, chunk_y, chunk_z)
-#             create_noise(size, 'random2', chunk_x, chunk_y, chunk_z)
-#             create_noise(size, 'random3', chunk_x, chunk_y, chunk_z)
+print("initializing")
+for chunk_x in tqdm(list(range(chunk_dim))):
+    for chunk_y in list(range(chunk_dim)):
+        for chunk_z in list(range(chunk_dim)):
+            create_noise(size, 'noise1', chunk_x, chunk_y, chunk_z)
+            create_noise(size, 'noise2', chunk_x, chunk_y, chunk_z)
+            create_noise(size, 'noise3', chunk_x, chunk_y, chunk_z)
 
 print("bluring")
 for chunk_x in tqdm(list(range(chunk_dim))):
@@ -103,10 +105,3 @@ for chunk_x in tqdm(list(range(chunk_dim))):
             adjust_values(int(size*chunk_dim), size, depth, max_box, box_increment, 'noise1', chunk_x, chunk_y, chunk_z)
             adjust_values(int(size*chunk_dim), size, depth, max_box, box_increment, 'noise2', chunk_x, chunk_y, chunk_z)
             adjust_values(int(size*chunk_dim), size, depth, max_box, box_increment, 'noise3', chunk_x, chunk_y, chunk_z)
-
-# size = 100
-# depth = 1500
-# max_box = 20
-# box_increment = 5
-# image = create_noise(size, depth, max_box, box_increment, 'test', 0)
-# write_frames(image, size)
