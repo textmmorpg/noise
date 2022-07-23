@@ -67,7 +67,7 @@ def write_frames(image_data, size):
         # prep for output
         for i in range(size):
             for y in range(size):
-                val = image[i][y][r]*256
+                val = image_data[i][y][r]*256
                 if val > 256:
                     val = 256
                 
@@ -93,24 +93,30 @@ def create_chunks(chunk_grid_size, size, i):
                 create_noise(size, depth, max_box, box_increment, f'noise{i+1}', chunk_x, chunk_y, chunk_z)
 
 
-def blur_chunk_side(box, xyz, side, chunk1, chunk2, chunk_size):
+# TODO
+def blur_chunk_side(box, xyz, side, chunk1, chunk2, size):
+
     box_half = int(box/2)
     for z in range(size):
-        for x in range(size):
+        for x in range(1):
             for y in range(size):
-                box_x = [chunk1[box_i + x][y][z] for box_i in range(-box_half, box_half) if box_i + x > 0 and box_i + x < size]
-                box_y = [chunk1[x][box_i + y][z] for box_i in range(-box_half, box_half) if box_i + y > 0 and box_i + y < size]
-                box_z = [chunk1[x][y][box_i + z] for box_i in range(-box_half, box_half) if box_i + z > 0 and box_i + z < size]
-                vals = box_x + box_y + box_z
-                chunk1[x][y][z] = np.mean(vals) if vals else chunk1[x][y][z]
-    
+                if(xyz == 'x' and side == 1):
+                    box1_x = [chunk1[box_i + x][y][z] for box_i in range(-box_half, box_half) if box_i + x > 0 and box_i + x < size]
+                    box1_y = [chunk1[x][box_i + y][z] for box_i in range(-box_half, box_half) if box_i + y > 0 and box_i + y < size]
+                    box1_z = [chunk1[x][y][box_i + z] for box_i in range(-box_half, box_half) if box_i + z > 0 and box_i + z < size]
+                    box2_x = [chunk2[box_i + x][y][z] for box_i in range(-box_half, box_half) if box_i + x > 0 and box_i + x < size]
+                    box2_y = [chunk2[x][box_i + y][z] for box_i in range(-box_half, box_half) if box_i + y > 0 and box_i + y < size]
+                    box2_z = [chunk2[x][y][box_i + z] for box_i in range(-box_half, box_half) if box_i + z > 0 and box_i + z < size]
+                    vals = box1_x + box1_y + box1_z + box2_x + box2_y + box2_z
+                    chunk1[x][y][z] = np.mean(vals) if vals else chunk1[x][y][z]
+        
     return chunk1
                 
-def blur_chunks(chunk1, chunk2, filename1, filename2, xyz, side):
-    chunk1 = blur_chunk_side(13, xyz, side, chunk1, chunk2)
-    chunk1 = blur_chunk_side(5, xyz, side, chunk1, chunk2)
-    chunk2 = blur_chunk_side(13, xyz, side, chunk2, chunk1)
-    chunk2 = blur_chunk_side(5, xyz, side, chunk2, chunk1)
+def blur_chunks(chunk1, chunk2, filename1, filename2, xyz, side, size):
+    chunk1 = blur_chunk_side(13, xyz, side, chunk1, chunk2, size)
+    chunk1 = blur_chunk_side(5, xyz, side, chunk1, chunk2, size)
+    chunk2 = blur_chunk_side(13, xyz, side, chunk2, chunk1, size)
+    chunk2 = blur_chunk_side(5, xyz, side, chunk2, chunk1, size)
 
     with open(filename1, 'wb') as handle:
         pickle.dump(chunk1, handle, protocol=pickle.HIGHEST_PROTOCOL)
